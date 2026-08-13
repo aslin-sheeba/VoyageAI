@@ -3,9 +3,13 @@ import cors from "cors";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 
-import tripRoutes from "./routes/tripRoutes.js";
-import aiRoutes from "./routes/ai.routes.js"; // 👈 Import the AI routes
-import placeRoutes from "./routes/placeRoutes.js";
+import tripRoutes    from "./routes/tripRoutes.js";
+import aiRoutes      from "./routes/ai.routes.js";
+import placeRoutes   from "./routes/placeRoutes.js";
+import guardianRoutes from "./routes/guardianRoutes.js";
+import userRoutes    from "./routes/userRoutes.js";
+import expenseRoutes from "./routes/expenseRoutes.js";
+import memberRoutes  from "./routes/memberRoutes.js";
 
 /* 1️⃣ Load env variables FIRST */
 dotenv.config();
@@ -30,9 +34,13 @@ mongoose
   .catch((err) => console.error("❌ Mongo Error:", err.message));
 
 /* 5️⃣ Routes */
-app.use("/api/trips", tripRoutes);
-app.use("/api/ai", aiRoutes); // 👈 Mount the AI routes
-app.use("/api/places", placeRoutes);
+app.use("/api/trips",    tripRoutes);
+app.use("/api/ai",       aiRoutes);
+app.use("/api/places",   placeRoutes);
+app.use("/api/guardian", guardianRoutes);
+app.use("/api/users",    userRoutes);
+app.use("/api/expenses", expenseRoutes);
+app.use("/api",          memberRoutes);   // /api/trips/:id/members, /api/invitations
 
 /* Health check */
 app.get("/api/health", (req, res) => {

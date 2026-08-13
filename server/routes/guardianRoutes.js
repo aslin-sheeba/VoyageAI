@@ -1,14 +1,19 @@
 import express from "express";
 import { fetchPlacesByCategory } from "../services/geoapifyService.js";
+import { verifyToken } from "../middleware/auth.js";
 
 const router = express.Router();
 
 // GET /api/guardian/nearby?lat=..&lng=..&type=hospital
-router.get("/nearby", async (req, res) => {
+router.get("/nearby", verifyToken, async (req, res) => {
   try {
     const lat = Number(req.query.lat);
     const lng = Number(req.query.lng);
     const type = (req.query.type || "hospital").toLowerCase();
+
+    if (isNaN(lat) || isNaN(lng)) {
+      return res.status(400).json({ success: false, error: "Invalid lat/lng parameters" });
+    }
 
     const categoryMap = {
       hospital: "healthcare.hospital",

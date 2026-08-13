@@ -1,8 +1,13 @@
 import express from "express";
-import { addPlaceToTrip } from "../controllers/placeController.js";
+import { addPlaceToTrip, discoverPlaces } from "../controllers/placeController.js";
+import { verifyToken } from "../middleware/auth.js";
 
 const router = express.Router();
 
-router.post("/add", addPlaceToTrip);
+// Search real locations
+router.get("/discover", verifyToken, discoverPlaces);
+
+// Add location manually to trip
+router.post("/add", verifyToken, addPlaceToTrip);
 
 export default router;

@@ -1,16 +1,36 @@
 import mongoose from "mongoose";
 
 /* =========================
+   MEMBER SUBDOCUMENT
+   ========================= */
+const memberSchema = new mongoose.Schema(
+  {
+    userId:   { type: String, required: true },
+    name:     { type: String, default: "" },
+    email:    { type: String, required: true },
+    photoURL: { type: String, default: "" },
+    role:     { type: String, enum: ["owner", "member"], default: "member" },
+    status:   { type: String, enum: ["invited", "accepted", "declined"], default: "invited" },
+    joinedAt: { type: Date, default: Date.now },
+  },
+  { _id: false }
+);
+
+/* =========================
    LOCATION (Map Pins)
    ========================= */
 const locationSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true },
-    lat: { type: Number, required: true },
-    lng: { type: Number, required: true },
-    cost: { type: Number, default: 0 },
-    type: { type: String }, // sight | food | hotel
-    day: { type: Number },  // which day (for timeline grouping)
+    placeId:    { type: String, default: "" },   // Geoapify place_id
+    name:       { type: String, required: true },
+    lat:        { type: Number, required: true },
+    lng:        { type: Number, required: true },
+    cost:       { type: Number, default: 0 },
+    type:       { type: String, default: "other" }, // hotel | restaurant | attraction | activity | other
+    category:   { type: String, default: "" },      // raw Geoapify category
+    address:    { type: String, default: "" },
+    websiteUrl: { type: String, default: "" },
+    day:        { type: Number },
   },
   { _id: false }
 );
@@ -20,10 +40,13 @@ const locationSchema = new mongoose.Schema(
    ========================= */
 const activitySchema = new mongoose.Schema(
   {
-    type: { type: String, required: true }, // sight | food
-    name: { type: String, required: true },
-    cost: { type: Number, default: 0 },
-    image: { type: String },
+    type:       { type: String, required: true }, // sight | food | hotel
+    name:       { type: String, required: true },
+    cost:       { type: Number, default: 0 },
+    image:      { type: String, default: "" },
+    address:    { type: String, default: "" },
+    websiteUrl: { type: String, default: "" },
+    placeId:    { type: String, default: "" },
     coords: {
       lat: Number,
       lng: Number,
@@ -37,12 +60,15 @@ const activitySchema = new mongoose.Schema(
    ========================= */
 const daySchema = new mongoose.Schema(
   {
-    day: { type: Number, required: true },
+    day:        { type: Number, required: true },
     activities: { type: [activitySchema], default: [] },
     hotel: {
-      name: String,
-      cost: Number,
-      image: String,
+      name:       String,
+      cost:       Number,
+      image:      String,
+      address:    String,
+      websiteUrl: String,
+      placeId:    String,
       coords: {
         lat: Number,
         lng: Number,
@@ -56,14 +82,16 @@ const daySchema = new mongoose.Schema(
    TRIP
    ========================= */
 const tripSchema = new mongoose.Schema({
-  userId: { type: String, required: true, index: true }, // Firebase UID
+  userId: { type: String, required: true, index: true }, // Firebase UID of creator/owner
 
   tripName: { type: String, required: true },
-  city: { type: String, required: true },
+  city:     { type: String, required: true },
 
-  days: { type: Number, default: 1 },
+  days:   { type: Number, default: 1 },
   budget: { type: Number, default: 0 },
-  members: { type: Number, default: 1 },
+
+  /* Participant list — replaces the flat `members` Number field */
+  participants: { type: [memberSchema], default: [] },
 
   /* 🔴 Used by MapCanvas */
   locations: { type: [locationSchema], default: [] },
@@ -73,12 +101,12 @@ const tripSchema = new mongoose.Schema({
 
   /* 💰 Used by Budget Bar */
   budgetBreakdown: {
-    userBudget: Number,
+    userBudget:         Number,
     estimatedTotalCost: Number,
-    status: String, // Within Budget | Over Budget
-    hotelCost: Number,
-    foodCost: Number,
-    sightCost: Number,
+    status:             String, // Within Budget | Over Budget
+    hotelCost:          Number,
+    foodCost:           Number,
+    sightCost:          Number,
   },
 
   createdAt: { type: Date, default: Date.now },

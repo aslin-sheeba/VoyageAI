@@ -1,13 +1,11 @@
 import { useState } from "react";
 import { sendMessage } from "../api/aiApi";
-import { addPlace } from "../api/placeService";
-import { getTrips } from "../api/tripsService";
 
-export default function AIChatWidget({ tripId, user, setActiveTrip }) {
+export default function AIChatWidget({ trip, setActiveTrip }) {
   const [messages, setMessages] = useState([
     {
       role: "ai",
-      text: "I’m VoyageAI. I’ll assist you throughout today’s plan ✨",
+      text: "I’m VoyageAI. How can I help you customize your travel plan today? ✨",
     },
   ]);
 
@@ -25,44 +23,18 @@ export default function AIChatWidget({ tripId, user, setActiveTrip }) {
     setThinking(true);
 
     try {
-      // 🔹 Ask Gemini backend
-      const res = await sendMessage(userMessage, tripId);
+      // 🔹 Ask Gemini backend, passing the trip ID for context
+      const res = await sendMessage(userMessage, trip?._id);
 
-      // ✅ ADD PLACE FLOW
-      if (res.action === "ADD_PLACE" && res.payload) {
-        setMessages((prev) => [
-          ...prev,
-          { role: "ai", text: res.reply },
-          { role: "ai", text: "📍 Adding place to your trip..." },
-        ]);
+      // Add AI reply to messages
+      setMessages((prev) => [
+        ...prev,
+        { role: "ai", text: res.reply || "😊 Here is what I generated for you!" },
+      ]);
 
-        // TEMP coordinates (Geoapify comes next phase)
-        await addPlace(tripId, {
-          name: res.payload.query,
-          lat: 11.9341,
-          lng: 79.8300,
-          cost: res.payload.type === "food" ? 400 : 0,
-        });
-
-        // 🔄 Refresh trips from DB
-        const trips = await getTrips(user.uid);
-        setActiveTrip(trips[0]);
-
-        setMessages((prev) => [
-          ...prev,
-          { role: "ai", text: "✅ Place added successfully!" },
-        ]);
-      }
-
-      // ✅ NORMAL CHAT (NO ACTION)
-      else {
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "ai",
-            text: res.reply || "😊 I'm here to help!",
-          },
-        ]);
+      // If the backend executed an action and updated the trip, sync it
+      if (res.updatedTrip) {
+        setActiveTrip(res.updatedTrip);
       }
     } catch (err) {
       console.error("AI error:", err);
@@ -70,7 +42,7 @@ export default function AIChatWidget({ tripId, user, setActiveTrip }) {
         ...prev,
         {
           role: "ai",
-          text: "⚠️ Sorry, something went wrong. Try again.",
+          text: "⚠️ Sorry, I had trouble processing that action. Please verify details and try again.",
         },
       ]);
     } finally {
@@ -79,23 +51,24 @@ export default function AIChatWidget({ tripId, user, setActiveTrip }) {
   };
 
   return (
-    <section className="mt-4 rounded-2xl bg-slate-900/50 backdrop-blur-md border border-white/10 shadow-lg flex flex-col h-[280px]">
-
+    <section className="bg-slate-900 border border-white/5 rounded-2xl flex flex-col h-[280px] shadow-inner overflow-hidden">
       {/* Header */}
-      <div className="px-4 py-2 text-sm font-semibold text-white border-b border-white/10">
-        🤖 AI Travel Assistant
-        <span className="ml-2 text-xs text-white/50">(Gemini)</span>
+      <div className="px-4 py-2 text-xs font-semibold text-gray-200 border-b border-white/10 flex justify-between items-center bg-black/10">
+        <span>🤖 AI Travel Assistant</span>
+        <span className="text-[10px] text-sky-400 font-bold uppercase tracking-widest bg-sky-500/10 px-2 py-0.5 rounded">
+          Active
+        </span>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3 text-sm">
+      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3 text-xs">
         {messages.map((msg, i) => (
           <div
             key={i}
-            className={`px-3 py-2 rounded-xl max-w-[85%] ${
+            className={`px-3 py-2 rounded-xl max-w-[85%] whitespace-pre-line leading-relaxed ${
               msg.role === "user"
-                ? "ml-auto bg-sky-500/80 text-white"
-                : "bg-white/10 text-white/90"
+                ? "ml-auto bg-sky-500/80 text-white font-medium shadow-sm"
+                : "bg-white/10 text-white/90 border border-white/5"
             }`}
           >
             {msg.text}
@@ -103,26 +76,26 @@ export default function AIChatWidget({ tripId, user, setActiveTrip }) {
         ))}
 
         {thinking && (
-          <div className="bg-white/10 px-3 py-2 rounded-xl w-fit animate-pulse text-white/70">
-            AI is thinking…
+          <div className="bg-white/5 border border-white/5 px-3 py-2 rounded-xl w-fit animate-pulse text-gray-400 text-xs">
+            VoyageAI is calculating...
           </div>
         )}
       </div>
 
       {/* Input */}
-      <div className="border-t border-white/10 p-3 flex gap-2">
+      <div className="border-t border-white/10 p-2 flex gap-1.5 bg-black/5">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSend()}
-          placeholder="Add places, hotels, food..."
-          className="flex-1 bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-sm text-white outline-none placeholder-white/40"
+          placeholder="Ask AI to add restaurants, cheaper hotels, etc."
+          className="flex-1 bg-slate-950 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white outline-none focus:border-sky-500"
         />
 
         <button
           onClick={handleSend}
           disabled={thinking}
-          className="px-4 rounded-xl bg-sky-500/80 hover:bg-sky-500 disabled:opacity-50 text-white text-sm transition"
+          className="px-3 rounded-xl bg-sky-500 hover:bg-sky-600 disabled:opacity-50 text-white text-xs font-bold transition"
         >
           Send
         </button>
