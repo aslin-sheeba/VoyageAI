@@ -19,3 +19,15 @@
 .leaflet-container {
   z-index: 0;
 }
+
+/* Shift Leaflet zoom control down to clear the absolute top bar */
+.leaflet-top .leaflet-control {
+  margin-top: 85px !important;
+}
+
+/* Shift Leaflet bottom controls up on mobile to clear the bottom nav bar */
+@media (max-width: 767px) {
+  .leaflet-bottom .leaflet-control {
+    margin-bottom: 75px !important;
+  }
+}
