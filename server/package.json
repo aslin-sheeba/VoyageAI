@@ -16,5 +16,8 @@
     "express": "^4.19.2",
     "firebase-admin": "^14.2.0",
     "mongoose": "^8.5.0"
+  },
+  "overrides": {
+    "jose": "^4.15.9"
   }
 }
