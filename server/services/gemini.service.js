@@ -9,7 +9,7 @@ export async function askGemini(prompt) {
   try {
     // 👇 CHANGED: Using the reliable alias from your list
     const model = genAI.getGenerativeModel({
-      model: "gemini-flash-latest" 
+      model: "gemini-1.5-flash" 
     });
 
     const result = await model.generateContent(prompt);
