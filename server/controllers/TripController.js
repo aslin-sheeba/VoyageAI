@@ -2,6 +2,7 @@ import axios from "axios";
 import Trip from "../models/Trip.js";
 import User from "../models/User.js";
 import { askGemini } from "../services/gemini.service.js";
+import { connectDB } from "../db.js";
 
 // --- HELPERS ---
 function daysBetween(startDate, endDate) {
@@ -45,6 +46,7 @@ function extractPlace(feature) {
 // --- 1. GET TRIPS (own + member trips) ---
 export const getTripsByUser = async (req, res) => {
   try {
+    await connectDB();
     const uid = req.user.uid;
     const email = req.user.email || "";
 
@@ -67,6 +69,7 @@ export const getTripsByUser = async (req, res) => {
 // --- 2. GENERATE TRIP (GEMINI + GEOAPIFY) ---
 export const generateTrip = async (req, res) => {
   try {
+    await connectDB();
     const userId  = req.user.uid;
     const userEmail = req.user.email || "";
     const userName  = req.user.name || req.user.displayName || "Traveler";
@@ -358,6 +361,7 @@ Required JSON Structure:
 // --- 3. UPDATE TRIP (AUTHENTICATED) ---
 export const updateTrip = async (req, res) => {
   try {
+    await connectDB();
     const { id }    = req.params;
     const userId    = req.user.uid;
     const { tripName, budget, itinerary, locations, budgetBreakdown, participants } = req.body;
@@ -390,6 +394,7 @@ export const updateTrip = async (req, res) => {
 // --- 4. DELETE TRIP (OWNER ONLY) ---
 export const deleteTrip = async (req, res) => {
   try {
+    await connectDB();
     const { id } = req.params;
     const userId = req.user.uid;
 
@@ -411,6 +416,7 @@ export const deleteTrip = async (req, res) => {
 // --- 5. CLEAR ALL TRIPS ---
 export const clearAllTrips = async (req, res) => {
   try {
+    await connectDB();
     const userId = req.user.uid;
     await Trip.deleteMany({ userId });
     res.json({ success: true, message: "💥 All your trips have been deleted!" });

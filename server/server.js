@@ -32,17 +32,8 @@ app.use(
 
 app.use(express.json());
 
-/* MongoDB connection */
-const MONGO_URI = process.env.MONGO_URI;
+/* MongoDB connection is handled dynamically in controllers via connectDB */
 
-if (!MONGO_URI) {
-  console.error("MONGO_URI is not configured");
-} else {
-  mongoose
-    .connect(MONGO_URI)
-    .then(() => console.log("MongoDB Connected"))
-    .catch((err) => console.error("MongoDB Error:", err.message));
-}
 
 /* Routes */
 app.use("/api/trips", tripRoutes);

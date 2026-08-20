@@ -1,5 +1,6 @@
 import axios from "axios";
 import Trip from "../models/Trip.js";
+import { connectDB } from "../db.js";
 
 // Helper to rebuild locations from itinerary
 function rebuildLocations(itinerary) {
@@ -32,6 +33,7 @@ function rebuildLocations(itinerary) {
 // GET /api/places/discover
 export const discoverPlaces = async (req, res) => {
   try {
+    await connectDB();
     const { tripId, category, query } = req.query;
     const userId = req.user.uid;
 
@@ -104,6 +106,7 @@ export const discoverPlaces = async (req, res) => {
 // POST /api/places/add
 export const addPlaceToTrip = async (req, res) => {
   try {
+    await connectDB();
     const { tripId, type, query, day, lat, lng, cost, name } = req.body;
     const userId = req.user.uid;
 

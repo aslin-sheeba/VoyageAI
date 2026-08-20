@@ -1,5 +1,6 @@
 import Expense from "../models/Expense.js";
 import Trip from "../models/Trip.js";
+import { connectDB } from "../db.js";
 
 // helper to verify trip ownership
 const checkTripOwnership = async (tripId, userId) => {
@@ -16,6 +17,7 @@ const checkTripOwnership = async (tripId, userId) => {
 // POST /api/expenses
 export const createExpense = async (req, res) => {
   try {
+    await connectDB();
     const { tripId, category, description, amount, date, notes } = req.body;
     const userId = req.user.uid;
 
@@ -52,6 +54,7 @@ export const createExpense = async (req, res) => {
 // GET /api/expenses/trip/:tripId
 export const getExpensesByTrip = async (req, res) => {
   try {
+    await connectDB();
     const { tripId } = req.params;
     const userId = req.user.uid;
 
@@ -75,6 +78,7 @@ export const getExpensesByTrip = async (req, res) => {
 // PUT /api/expenses/:id
 export const updateExpense = async (req, res) => {
   try {
+    await connectDB();
     const { id } = req.params;
     const { category, description, amount, date, notes } = req.body;
     const userId = req.user.uid;
@@ -108,6 +112,7 @@ export const updateExpense = async (req, res) => {
 // DELETE /api/expenses/:id
 export const deleteExpense = async (req, res) => {
   try {
+    await connectDB();
     const { id } = req.params;
     const userId = req.user.uid;
 

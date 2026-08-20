@@ -1,7 +1,9 @@
 import User from "../models/User.js";
+import { connectDB } from "../db.js";
 
 export const syncUser = async (req, res) => {
   try {
+    await connectDB();
     const uid = req.user.uid;
     const { name, email, photoURL } = req.body;
 
@@ -28,6 +30,7 @@ export const syncUser = async (req, res) => {
 
 export const getProfile = async (req, res) => {
   try {
+    await connectDB();
     const uid = req.user.uid;
     const user = await User.findOne({ uid });
 

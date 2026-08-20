@@ -1,6 +1,7 @@
 import { askGemini } from "../services/gemini.service.js";
 import Trip from "../models/Trip.js";
 import axios from "axios";
+import { connectDB } from "../db.js";
 
 function randInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -76,6 +77,7 @@ function rebuildLocations(itinerary) {
 
 export async function chatAI(req, res) {
   try {
+    await connectDB();
     const { message, tripId } = req.body;
     const userId = req.user.uid;
 

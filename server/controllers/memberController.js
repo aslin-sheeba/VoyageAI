@@ -1,5 +1,6 @@
 import Trip from "../models/Trip.js";
 import User from "../models/User.js";
+import { connectDB } from "../db.js";
 
 // Helper: Is the requesting user the owner of this trip?
 function isOwner(trip, uid) {
@@ -12,6 +13,7 @@ function isOwner(trip, uid) {
 // ─────────────────────────────────────────
 export const inviteMember = async (req, res) => {
   try {
+    await connectDB();
     const uid    = req.user.uid;
     const { tripId } = req.params;
     const { email }  = req.body;
@@ -72,6 +74,7 @@ export const inviteMember = async (req, res) => {
 // ─────────────────────────────────────────
 export const listMembers = async (req, res) => {
   try {
+    await connectDB();
     const uid    = req.user.uid;
     const { tripId } = req.params;
 
@@ -98,6 +101,7 @@ export const listMembers = async (req, res) => {
 // ─────────────────────────────────────────
 export const removeMember = async (req, res) => {
   try {
+    await connectDB();
     const uid            = req.user.uid;
     const { tripId, targetUserId } = req.params;
 
@@ -131,6 +135,7 @@ export const removeMember = async (req, res) => {
 // ─────────────────────────────────────────
 export const listInvitations = async (req, res) => {
   try {
+    await connectDB();
     const uid   = req.user.uid;
     const email = req.user.email || "";
 
@@ -172,6 +177,7 @@ export const listInvitations = async (req, res) => {
 // ─────────────────────────────────────────
 export const acceptInvitation = async (req, res) => {
   try {
+    await connectDB();
     const uid        = req.user.uid;
     const email      = req.user.email || "";
     const { tripId } = req.params;
@@ -201,6 +207,7 @@ export const acceptInvitation = async (req, res) => {
 // ─────────────────────────────────────────
 export const declineInvitation = async (req, res) => {
   try {
+    await connectDB();
     const uid        = req.user.uid;
     const email      = req.user.email || "";
     const { tripId } = req.params;
