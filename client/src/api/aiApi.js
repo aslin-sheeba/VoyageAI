@@ -13,9 +13,9 @@ export async function sendMessage(message, tripId) {
 
     const data = await res.json();
     if (!res.ok) {
-      throw new Error(data.error || "AI chat request failed");
+      throw new Error(data.message || data.error || "AI chat request failed");
     }
-    return data;
+    return data.data;
   } catch (err) {
     console.error("sendMessage error:", err);
     throw err;

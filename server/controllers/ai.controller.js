@@ -134,7 +134,17 @@ JSON Template:
 }
 `;
 
-    const rawResponse = await askGemini(`${SYSTEM_PROMPT}\nUser Request: ${message}`);
+    let rawResponse;
+    try {
+      rawResponse = await askGemini(`${SYSTEM_PROMPT}\nUser Request: ${message}`);
+    } catch (err) {
+      console.error("❌ AI Chatbot Gemini Request Failed:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to generate AI response"
+      });
+    }
+
     let cleanJson = rawResponse.trim();
     if (cleanJson.startsWith("```")) {
       cleanJson = cleanJson.replace(/^```(json)?/, "").replace(/```$/, "").trim();
@@ -144,7 +154,13 @@ JSON Template:
     try {
       result = JSON.parse(cleanJson);
     } catch {
-      return res.json({ reply: rawResponse.replace(/[{}\[\]"]/g, ""), action: null });
+      return res.status(200).json({
+        success: true,
+        data: {
+          reply: rawResponse.replace(/[{}\[\]"]/g, ""),
+          action: null
+        }
+      });
     }
 
     const { action, payload } = result;
@@ -282,9 +298,15 @@ JSON Template:
       }
     }
 
-    res.json(result);
+    return res.status(200).json({
+      success: true,
+      data: result
+    });
   } catch (err) {
     console.error("AI Controller Error:", err);
-    res.status(500).json({ success: false, error: "AI failed to process this request" });
+    return res.status(500).json({
+      success: false,
+      message: "Failed to generate AI response"
+    });
   }
 }
