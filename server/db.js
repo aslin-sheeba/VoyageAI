@@ -10,9 +10,9 @@ if (!cached) {
 }
 
 export async function connectDB() {
-  const mongoUri = process.env.MONGO_URI;
+  const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI || process.env.MONGO_URL || process.env.MONGODB_URL;
   if (!mongoUri) {
-    console.error("❌ MONGO_URI is missing in process.env. Available env keys:", Object.keys(process.env));
+    console.error("❌ MONGO_URI/MONGODB_URI is missing in process.env. Available env keys:", Object.keys(process.env));
     throw new Error("MONGO_URI is not configured");
   }
 
