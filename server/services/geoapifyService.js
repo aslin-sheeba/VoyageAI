@@ -1,11 +1,10 @@
 import axios from "axios";
 
-const GEO_KEY = process.env.GEOAPIFY_KEY;
-
 export async function geocodeCity(city) {
+  const apiKey = process.env.GEOAPIFY_KEY;
   const url = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(
     city
-  )}&type=city&format=json&apiKey=${GEO_KEY}`;
+  )}&type=city&format=json&apiKey=${apiKey}`;
 
   const { data } = await axios.get(url);
 
@@ -18,10 +17,11 @@ export async function geocodeCity(city) {
 }
 
 export async function fetchPlacesByCategory({ lat, lon, categories, limit = 20, radiusM = 5000 }) {
+  const apiKey = process.env.GEOAPIFY_KEY;
   // Places API docs: https://api.geoapify.com/v2/places?PARAMS :contentReference[oaicite:0]{index=0}
   const url = `https://api.geoapify.com/v2/places?categories=${encodeURIComponent(
     categories
-  )}&filter=circle:${lon},${lat},${radiusM}&bias=proximity:${lon},${lat}&limit=${limit}&apiKey=${GEO_KEY}`;
+  )}&filter=circle:${lon},${lat},${radiusM}&bias=proximity:${lon},${lat}&limit=${limit}&apiKey=${apiKey}`;
 
   const { data } = await axios.get(url);
 

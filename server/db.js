@@ -1,11 +1,5 @@
 import mongoose from "mongoose";
 
-const MONGO_URI = process.env.MONGO_URI;
-
-if (!MONGO_URI) {
-  console.error("❌ MONGO_URI is not configured in env");
-}
-
 let cached = global.mongoose;
 
 if (!cached) {
@@ -16,7 +10,9 @@ if (!cached) {
 }
 
 export async function connectDB() {
-  if (!MONGO_URI) {
+  const mongoUri = process.env.MONGO_URI;
+  if (!mongoUri) {
+    console.error("❌ MONGO_URI is missing in process.env. Available env keys:", Object.keys(process.env));
     throw new Error("MONGO_URI is not configured");
   }
 
@@ -31,7 +27,7 @@ export async function connectDB() {
 
   if (!cached.promise) {
     console.log("🔄 Connecting to MongoDB...");
-    cached.promise = mongoose.connect(MONGO_URI, {
+    cached.promise = mongoose.connect(mongoUri, {
       serverSelectionTimeoutMS: 10000,
     }).then((m) => {
       console.log("✅ MongoDB Connected (ready state:", mongoose.connection.readyState, ")");
