@@ -5,14 +5,12 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL || (typeof window !== "undefi
 export async function discoverPlaces(tripId, category, query = "") {
   try {
     const headers = await getAuthHeaders();
-    const url = new URL(`${BASE_URL}/api/places/discover`);
-    url.searchParams.append("tripId", tripId);
-    url.searchParams.append("category", category);
+    let url = `${BASE_URL}/api/places/discover?tripId=${encodeURIComponent(tripId)}&category=${encodeURIComponent(category)}`;
     if (query) {
-      url.searchParams.append("query", query);
+      url += `&query=${encodeURIComponent(query)}`;
     }
 
-    const res = await fetch(url.toString(), {
+    const res = await fetch(url, {
       method: "GET",
       headers,
     });
