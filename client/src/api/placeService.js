@@ -1,6 +1,6 @@
 import { getAuthHeaders } from "./authHeaders";
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? (typeof window !== "undefined" ? window.location.origin : "");
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || (typeof window !== "undefined" ? window.location.origin : "");
 
 export async function discoverPlaces(tripId, category, query = "") {
   try {

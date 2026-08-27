@@ -1,6 +1,6 @@
 import { getAuthHeaders } from "./authHeaders";
 
-const BASE = import.meta.env.VITE_API_BASE_URL ?? (typeof window !== "undefined" ? window.location.origin : "");
+const BASE = import.meta.env.VITE_API_BASE_URL || (typeof window !== "undefined" ? window.location.origin : "");
 
 /** Invite a member to a trip by email */
 export async function inviteMember(tripId, email) {
