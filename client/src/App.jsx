@@ -471,7 +471,7 @@ export default function App() {
 
       {activePanel === "safety" && (
         <FloatingPanel title="🚨 Safety & SOS" onClose={closePanel}>
-          <SafetyTab />
+          <SafetyTab activeTrip={activeTrip} />
         </FloatingPanel>
       )}
 

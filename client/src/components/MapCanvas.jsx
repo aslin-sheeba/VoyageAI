@@ -121,8 +121,9 @@ export default function MapCanvas({ locations = [], zoomTo = null, selectedId = 
   return (
     <MapContainer center={defaultCenter} zoom={5} className="w-full h-full z-0">
       <TileLayer
-        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-        attribution="&copy; CARTO"
+        url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        className="map-tiles-dark"
       />
 
       <FitBoundsHandler locations={valid} />

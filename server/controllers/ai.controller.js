@@ -1,5 +1,6 @@
 import { askGemini } from "../services/gemini.service.js";
 import Trip from "../models/Trip.js";
+import ChatMessage from "../models/ChatMessage.js";
 import axios from "axios";
 import { connectDB } from "../db.js";
 
@@ -300,6 +301,17 @@ JSON Template:
       }
     }
 
+    // ── Save both turns to MongoDB ──────────────────────────────────────────
+    if (tripId) {
+      const tripObjectId = trip?._id;
+      if (tripObjectId) {
+        await ChatMessage.insertMany([
+          { tripId: tripObjectId, senderId: userId, role: "user",  text: message,               timestamp: new Date() },
+          { tripId: tripObjectId, senderId: "",     role: "ai",   text: result.reply || "",    timestamp: new Date(Date.now() + 1) },
+        ]);
+      }
+    }
+
     return res.status(200).json({
       success: true,
       data: result
@@ -310,5 +322,38 @@ JSON Template:
       success: false,
       message: "Failed to generate AI response"
     });
+  }
+}
+
+// ── GET /api/ai/chat/:tripId ───────────────────────────────────────────────
+/**
+ * Fetch persisted chat history for a trip.
+ * Only the trip owner and accepted members may read it.
+ */
+export async function getChatHistory(req, res) {
+  try {
+    await connectDB();
+    const { tripId } = req.params;
+    const userId     = req.user.uid;
+
+    const trip = await Trip.findById(tripId).lean();
+    if (!trip) return res.status(404).json({ success: false, error: "Trip not found" });
+
+    const isOwner  = trip.userId === userId;
+    const isMember = trip.participants?.some(
+      (p) => p.userId === userId && p.status === "accepted"
+    );
+    if (!isOwner && !isMember) {
+      return res.status(403).json({ success: false, error: "Forbidden: Access denied" });
+    }
+
+    const messages = await ChatMessage.find({ tripId })
+      .sort({ timestamp: 1 })
+      .lean();
+
+    return res.status(200).json({ success: true, messages });
+  } catch (err) {
+    console.error("getChatHistory Error:", err);
+    return res.status(500).json({ success: false, error: "Failed to fetch chat history" });
   }
 }

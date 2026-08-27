@@ -1,29 +1,37 @@
-import { useState, useEffect } from "react";
-import { getNearbyEmergency } from "../api/guardianService";
+import { useState, useEffect, useRef } from "react";
+import { getNearbyEmergency, shareLocation, triggerSOS } from "../api/guardianService";
 
-export default function SafetyTab() {
-  const [coords, setCoords] = useState(null);
-  const [loadingCoords, setLoadingCoords] = useState(false);
-  const [loadingServices, setLoadingServices] = useState(false);
-  const [error, setError] = useState("");
-  const [services, setServices] = useState([]);
-  const [serviceType, setServiceType] = useState("hospital");
-  const [sharingLocation, setSharingLocation] = useState(false);
-  const [shareIntervalId, setShareIntervalId] = useState(null);
+export default function SafetyTab({ activeTrip }) {
+  const [coords,           setCoords]           = useState(null);
+  const [loadingCoords,    setLoadingCoords]    = useState(false);
+  const [loadingServices,  setLoadingServices]  = useState(false);
+  const [error,            setError]            = useState("");
+  const [services,         setServices]         = useState([]);
+  const [serviceType,      setServiceType]      = useState("hospital");
+  const [sharingLocation,  setSharingLocation]  = useState(false);
+  const [sosDispatched,    setSosDispatched]    = useState(false);
+  const intervalRef = useRef(null);
 
+  // ── Fetch nearby emergency services ─────────────────────────────────────────
   const fetchEmergencyServices = async (lat, lng, type) => {
     setLoadingServices(true);
     setError("");
     try {
       const data = await getNearbyEmergency(lat, lng, type);
       setServices(data);
-    } catch (err) {
+    } catch {
       setError("Failed to retrieve nearby emergency services.");
     } finally {
       setLoadingServices(false);
     }
   };
 
+  // Re-fetch when service type changes and coords already obtained
+  useEffect(() => {
+    if (coords) fetchEmergencyServices(coords.lat, coords.lng, serviceType);
+  }, [serviceType]);
+
+  // ── SOS button handler ───────────────────────────────────────────────────────
   const handleSOS = () => {
     if (!navigator.geolocation) {
       setError("Geolocation is not supported by your browser.");
@@ -34,86 +42,78 @@ export default function SafetyTab() {
     setCoords(null);
     setServices([]);
     setError("");
+    setSosDispatched(false);
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
         setCoords({ lat, lng });
         setLoadingCoords(false);
+
+        // 1. Find nearby services for display
         fetchEmergencyServices(lat, lng, serviceType);
+
+        // 2. Dispatch SOS alert to backend (sends SMS to trip co-members)
+        try {
+          await triggerSOS(lat, lng, activeTrip?._id);
+          setSosDispatched(true);
+        } catch (err) {
+          console.error("SOS dispatch error:", err.message);
+          // Still show nearby services even if SOS dispatch fails
+        }
       },
       (err) => {
         setLoadingCoords(false);
-        if (err.code === err.PERMISSION_DENIED) {
-          setError("Location permission denied. Please allow access to use SOS services.");
-        } else if (err.code === err.POSITION_UNAVAILABLE) {
-          setError("Location information is unavailable. Try again in a different spot.");
-        } else if (err.code === err.TIMEOUT) {
-          setError("Location request timed out. Please retry.");
-        } else {
-          setError("Unable to retrieve coordinates.");
-        }
+        if      (err.code === err.PERMISSION_DENIED)   setError("Location permission denied. Please allow access to use SOS services.");
+        else if (err.code === err.POSITION_UNAVAILABLE) setError("Location unavailable. Try again in a different spot.");
+        else if (err.code === err.TIMEOUT)              setError("Location request timed out. Please retry.");
+        else                                            setError("Unable to retrieve coordinates.");
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
   };
 
-  // Re-fetch services if service type is changed and coords exist
-  useEffect(() => {
-    if (coords) {
-      fetchEmergencyServices(coords.lat, coords.lng, serviceType);
-    }
-  }, [serviceType]);
-
-  // Guardian Location Sharing simulation
+  // ── Live Guardian Location Sharing ──────────────────────────────────────────
   const toggleLocationSharing = () => {
     if (sharingLocation) {
       // Stop sharing
-      if (shareIntervalId) {
-        clearInterval(shareIntervalId);
-        setShareIntervalId(null);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
       setSharingLocation(false);
-      alert("Stopped sharing location with guardian.");
     } else {
-      // Start sharing
+      // Start sharing — ping every 15 seconds
       if (!navigator.geolocation) {
         alert("Geolocation unsupported.");
         return;
       }
-      
+
       setSharingLocation(true);
-      
-      const interval = setInterval(() => {
+
+      const ping = () => {
         navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            console.log(`Sharing Location with Guardian: Lat ${pos.coords.latitude}, Lng ${pos.coords.longitude}`);
-            // In a production app, we would make a POST /api/users/share-location here.
-          },
-          (err) => console.warn("Sharing failed:", err.message),
+          (pos) => shareLocation(pos.coords.latitude, pos.coords.longitude),
+          (err) => console.warn("Location ping failed:", err.message),
           { enableHighAccuracy: false, timeout: 5000 }
         );
-      }, 15000); // sync every 15 seconds
+      };
 
-      setShareIntervalId(interval);
-      alert("Guardian location sharing enabled. Your current location will be shared securely.");
+      ping(); // immediate first ping
+      intervalRef.current = setInterval(ping, 15000);
     }
   };
 
-  // Cleanup sharing interval on unmount
+  // Cleanup interval on unmount
   useEffect(() => {
-    return () => {
-      if (shareIntervalId) {
-        clearInterval(shareIntervalId);
-      }
-    };
-  }, [shareIntervalId]);
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, []);
 
   return (
     <div className="p-6 text-white max-w-4xl mx-auto pb-6">
       <div className="mb-6">
-        <h2 className="text-3xl font-extrabold bg-gradient-to-r from-red-400 to-amber-400 bg-clip-text text-transparent">Safety & Emergency</h2>
+        <h2 className="text-3xl font-extrabold bg-gradient-to-r from-red-400 to-amber-400 bg-clip-text text-transparent">Safety &amp; Emergency</h2>
         <p className="text-gray-400 text-sm mt-1">Locate nearby services immediately and share your coordinates with guardians</p>
       </div>
 
@@ -123,13 +123,13 @@ export default function SafetyTab() {
           <div>
             <h3 className="text-xl font-bold mb-2">🚨 SOS Emergency</h3>
             <p className="text-gray-400 text-xs px-2 mb-4">
-              Press the button below to request GPS location and fetch closest hospitals, police departments, or fire stations.
+              Press the button below to request GPS location, fetch closest services, and alert trip co-members.
             </p>
           </div>
 
           <div className="relative my-4">
             <span className="absolute inset-0 rounded-full bg-red-500/40 animate-ping"></span>
-            <button 
+            <button
               onClick={handleSOS}
               disabled={loadingCoords}
               className="relative w-24 h-24 rounded-full bg-gradient-to-tr from-red-600 to-rose-600 shadow-[0_0_30px_rgba(239,68,68,0.7)] text-white font-black text-xl hover:scale-105 active:scale-95 transition"
@@ -139,8 +139,14 @@ export default function SafetyTab() {
           </div>
 
           {coords && (
-            <div className="text-[10px] text-gray-500 bg-black/20 px-3 py-1.5 rounded-lg border border-white/5">
-              Current GPS: {coords.lat.toFixed(4)}, {coords.lng.toFixed(4)}
+            <div className="text-[10px] text-gray-500 bg-black/20 px-3 py-1.5 rounded-lg border border-white/5 mt-2">
+              GPS: {coords.lat.toFixed(4)}, {coords.lng.toFixed(4)}
+            </div>
+          )}
+
+          {sosDispatched && (
+            <div className="text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-lg mt-2">
+              ✓ SOS alert dispatched to trip members
             </div>
           )}
         </div>
@@ -150,7 +156,7 @@ export default function SafetyTab() {
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-bold">🚑 Nearby Services</h3>
             {coords && (
-              <select 
+              <select
                 value={serviceType}
                 onChange={(e) => setServiceType(e.target.value)}
                 className="bg-slate-800 border border-white/10 rounded-lg px-2.5 py-1 text-xs"
@@ -195,8 +201,7 @@ export default function SafetyTab() {
                     <h4 className="font-bold text-gray-200 truncate">{item.name}</h4>
                     <p className="text-gray-400 text-xs truncate mt-0.5">{item.address || "Address unknown"}</p>
                   </div>
-
-                  <a 
+                  <a
                     href={`https://www.google.com/maps/dir/?api=1&destination=${item.lat},${item.lng}`}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -218,16 +223,18 @@ export default function SafetyTab() {
           <div>
             <h3 className="font-bold text-lg">Guardian Location Sharing</h3>
             <p className="text-gray-400 text-xs mt-0.5">
-              Securely stream your coordinates to a designated guardian in real-time. Toggle to start or stop sharing.
+              {sharingLocation
+                ? "📡 Streaming your live GPS coordinates to the server every 15 seconds."
+                : "Securely stream your coordinates to a designated guardian in real-time. Toggle to start or stop."}
             </p>
           </div>
         </div>
 
-        <button 
+        <button
           onClick={toggleLocationSharing}
           className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 ${
-            sharingLocation 
-              ? "bg-amber-600 hover:bg-amber-700 text-white" 
+            sharingLocation
+              ? "bg-amber-600 hover:bg-amber-700 text-white"
               : "bg-sky-500 hover:bg-sky-600 text-white shadow-lg"
           }`}
         >

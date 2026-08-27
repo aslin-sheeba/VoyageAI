@@ -16,8 +16,15 @@
   background: rgba(56, 189, 248, 0.85);
   transform: scale(1.05);
 }
+
 .leaflet-container {
   z-index: 0;
+  background: #0f172a;
+}
+
+/* Dark map tiles — invert OSM tiles to match app dark theme */
+.map-tiles-dark {
+  filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%) saturate(0.7);
 }
 
 /* Shift Leaflet zoom control down to clear the absolute top bar */
@@ -30,4 +37,37 @@
   .leaflet-bottom .leaflet-control {
     margin-bottom: 75px !important;
   }
+}
+
+/* Dark leaflet popup styling */
+.leaflet-popup-content-wrapper {
+  background: #1e293b !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6) !important;
+  padding: 0 !important;
+  overflow: hidden;
+  color: #e2e8f0 !important;
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
+  width: 100% !important;
+}
+
+.leaflet-popup-tip-container {
+  display: none;
+}
+
+.leaflet-popup-close-button {
+  color: #64748b !important;
+  font-size: 18px !important;
+  top: 8px !important;
+  right: 8px !important;
+  z-index: 10;
+}
+
+.leaflet-popup-close-button:hover {
+  color: #e2e8f0 !important;
+  background: transparent !important;
 }

@@ -2,14 +2,18 @@ import Expense from "../models/Expense.js";
 import Trip from "../models/Trip.js";
 import { connectDB } from "../db.js";
 
-// helper to verify trip ownership
-const checkTripOwnership = async (tripId, userId) => {
+// helper to verify trip access — owner OR accepted participant
+const checkTripAccess = async (tripId, userId) => {
   const trip = await Trip.findById(tripId);
   if (!trip) {
     throw new Error("Trip not found");
   }
-  if (trip.userId !== userId) {
-    throw new Error("Forbidden: You do not own this trip");
+  const isOwner     = trip.userId === userId;
+  const isMember    = trip.participants?.some(
+    (p) => p.userId === userId && p.status === "accepted"
+  );
+  if (!isOwner && !isMember) {
+    throw new Error("Forbidden: You do not have access to this trip");
   }
   return trip;
 };
@@ -26,7 +30,7 @@ export const createExpense = async (req, res) => {
     }
 
     try {
-      await checkTripOwnership(tripId, userId);
+      await checkTripAccess(tripId, userId);
     } catch (err) {
       if (err.message.includes("Forbidden")) {
         return res.status(403).json({ success: false, error: err.message });
@@ -59,7 +63,7 @@ export const getExpensesByTrip = async (req, res) => {
     const userId = req.user.uid;
 
     try {
-      await checkTripOwnership(tripId, userId);
+      await checkTripAccess(tripId, userId);
     } catch (err) {
       if (err.message.includes("Forbidden")) {
         return res.status(403).json({ success: false, error: err.message });
@@ -89,7 +93,7 @@ export const updateExpense = async (req, res) => {
     }
 
     try {
-      await checkTripOwnership(expense.tripId, userId);
+      await checkTripAccess(expense.tripId, userId);
     } catch (err) {
       return res.status(403).json({ success: false, error: "Forbidden: Access denied" });
     }
@@ -122,7 +126,7 @@ export const deleteExpense = async (req, res) => {
     }
 
     try {
-      await checkTripOwnership(expense.tripId, userId);
+      await checkTripAccess(expense.tripId, userId);
     } catch (err) {
       return res.status(403).json({ success: false, error: "Forbidden: Access denied" });
     }

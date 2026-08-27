@@ -2,6 +2,15 @@ import axios from "axios";
 import Trip from "../models/Trip.js";
 import { connectDB } from "../db.js";
 
+/** Shared helper — owner or accepted participant */
+const hasTripAccess = (trip, userId) => {
+  const isOwner  = trip.userId === userId;
+  const isMember = trip.participants?.some(
+    (p) => p.userId === userId && p.status === "accepted"
+  );
+  return isOwner || isMember;
+};
+
 // Helper to rebuild locations from itinerary
 function rebuildLocations(itinerary) {
   const locations = [];
@@ -45,8 +54,8 @@ export const discoverPlaces = async (req, res) => {
     if (!trip) {
       return res.status(404).json({ success: false, error: "Trip not found" });
     }
-    if (trip.userId !== userId) {
-      return res.status(403).json({ success: false, error: "Forbidden: You do not own this trip" });
+    if (!hasTripAccess(trip, userId)) {
+      return res.status(403).json({ success: false, error: "Forbidden: You do not have access to this trip" });
     }
 
     // Determine bias/filter center from trip locations
@@ -118,8 +127,8 @@ export const addPlaceToTrip = async (req, res) => {
     if (!trip) {
       return res.status(404).json({ success: false, error: "Trip not found" });
     }
-    if (trip.userId !== userId) {
-      return res.status(403).json({ success: false, error: "Forbidden: You do not own this trip" });
+    if (!hasTripAccess(trip, userId)) {
+      return res.status(403).json({ success: false, error: "Forbidden: You do not have access to this trip" });
     }
 
     let finalName = name;
