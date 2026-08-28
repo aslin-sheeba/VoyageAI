@@ -55,6 +55,11 @@ function GroupChatModal({ trip, isOpen, onClose, onAskAI }) {
     if (!trip?._id || !isOpen) return;
 
     const connect = async () => {
+      if (WS_URL.includes("vercel.app")) {
+        console.info("ℹ️ Vercel deployment detected. Socket.io disabled; falling back to REST polling.");
+        setConnected(false);
+        return;
+      }
       try {
         const token = await auth.currentUser?.getIdToken();
         if (!token) return;
