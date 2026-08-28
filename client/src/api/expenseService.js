@@ -84,3 +84,15 @@ export async function deleteExpense(id) {
     throw err;
   }
 }
+
+export async function getExpenseSummary(tripId) {
+  try {
+    const headers = await getAuthHeaders();
+    const res = await fetch(`${BASE_URL}/api/expenses/trip/${tripId}/summary`, { headers });
+    if (!res.ok) return { balances: [], settlements: [] };
+    return await res.json();
+  } catch (err) {
+    console.error("getExpenseSummary error:", err);
+    return { balances: [], settlements: [] };
+  }
+}
