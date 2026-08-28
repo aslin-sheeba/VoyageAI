@@ -5,6 +5,7 @@ import { getMessages } from "../api/groupChatService";
 import { auth } from "../firebase";
 
 const BASE = import.meta.env.VITE_API_BASE_URL || (typeof window !== "undefined" ? window.location.origin : "");
+const WS_URL = import.meta.env.VITE_WS_URL || BASE;
 
 let socketInstance = null; // module-level singleton
 
@@ -49,6 +50,7 @@ function GroupChatModal({ trip, isOpen, onClose, onAskAI }) {
     finally { setLoading(false); }
   }, [trip?._id]);
 
+  // ── Socket Connection Lifecycle ──────────────────────
   useEffect(() => {
     if (!trip?._id || !isOpen) return;
 
@@ -58,7 +60,12 @@ function GroupChatModal({ trip, isOpen, onClose, onAskAI }) {
         if (!token) return;
 
         if (!socketInstance || socketInstance.disconnected) {
-          socketInstance = io(BASE, { auth: { token }, transports: ["websocket", "polling"] });
+          socketInstance = io(WS_URL, {
+            auth: { token },
+            transports: ["websocket", "polling"],
+            reconnectionAttempts: 3, // Stop spamming console if serverless
+            timeout: 5000,
+          });
         }
 
         socketInstance.on("connect", () => {
@@ -67,10 +74,10 @@ function GroupChatModal({ trip, isOpen, onClose, onAskAI }) {
         });
 
         socketInstance.on("disconnect", () => setConnected(false));
+        socketInstance.on("connect_error", () => setConnected(false));
 
         socketInstance.on("group_message", (msg) => {
           setMessages(prev => {
-            // Remove optimistic copy if same senderId + similar timestamp
             const filtered = prev.filter(m => !m._id?.startsWith("opt-"));
             return [...filtered, msg];
           });
@@ -84,10 +91,29 @@ function GroupChatModal({ trip, isOpen, onClose, onAskAI }) {
     return () => {
       if (socketInstance) {
         socketInstance.off("group_message");
+        socketInstance.off("connect");
+        socketInstance.off("disconnect");
+        socketInstance.off("connect_error");
         socketInstance.emit("leave_trip", trip._id);
       }
     };
   }, [trip?._id, isOpen, loadHistory]);
+
+  // ── Polling Fallback (polls every 5s if socket is offline/serverless) ──
+  useEffect(() => {
+    if (!trip?._id || !isOpen || connected) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const msgs = await getMessages(trip._id);
+        setMessages(msgs);
+      } catch (e) {
+        console.warn("Polling fallback failed:", e.message);
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [trip?._id, isOpen, connected]);
 
   useEffect(() => {
     if (isOpen) setTimeout(() => inputRef.current?.focus(), 100);
