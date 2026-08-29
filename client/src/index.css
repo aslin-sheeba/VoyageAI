@@ -1,73 +1,132 @@
 @import "tailwindcss";
-.map-btn {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(10px);
-  color: white;
-  font-size: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
-  transition: all 0.2s ease;
-}
 
-.map-btn:hover {
-  background: rgba(56, 189, 248, 0.85);
-  transform: scale(1.05);
-}
+/* ═══════════════════════════════════════════════════════════
+   MAP CANVAS PERF
+   ═══════════════════════════════════════════════════════════ */
 
+/* Tell GPU to rasterize the map layer independently */
 .leaflet-container {
   z-index: 0;
   background: #0f172a;
+  will-change: transform;
+  contain: layout style;
 }
 
-/* Dark map tiles — invert OSM tiles to match app dark theme */
+/* Dark (inverted) OSM tiles */
 .map-tiles-dark {
-  filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%) saturate(0.7);
+  filter: invert(100%) hue-rotate(180deg) brightness(92%) contrast(88%) saturate(0.65);
 }
 
-/* Shift Leaflet zoom control down to clear the absolute top bar */
+/* Shift zoom control below the top bar */
 .leaflet-top .leaflet-control {
-  margin-top: 85px !important;
+  margin-top: 90px !important;
 }
 
-/* Shift Leaflet bottom controls up on mobile to clear the bottom nav bar */
+/* Hide zoom buttons on mobile — pinch/scroll is sufficient */
 @media (max-width: 767px) {
-  .leaflet-bottom .leaflet-control {
-    margin-bottom: 75px !important;
+  .leaflet-control-zoom {
+    display: none !important;
   }
 }
 
-/* Dark leaflet popup styling */
+/* Shift bottom controls above the mobile nav bar */
+@media (max-width: 767px) {
+  .leaflet-bottom .leaflet-control {
+    margin-bottom: 90px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   GLASSMORPHISM MAP POPUPS
+   ═══════════════════════════════════════════════════════════ */
+
 .leaflet-popup-content-wrapper {
-  background: #1e293b !important;
-  border: 1px solid rgba(255,255,255,0.08) !important;
-  border-radius: 16px !important;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.6) !important;
+  background: rgba(2, 6, 23, 0.55) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  border-radius: 18px !important;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 24px 64px rgba(0, 0, 0, 0.70),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
   padding: 0 !important;
-  overflow: hidden;
+  overflow: hidden !important;
   color: #e2e8f0 !important;
 }
 
 .leaflet-popup-content {
   margin: 0 !important;
   width: 100% !important;
+  min-width: 220px !important;
 }
 
+/* Hide default Leaflet tip triangle — our glass style doesn't need it */
 .leaflet-popup-tip-container {
-  display: none;
+  display: none !important;
 }
 
 .leaflet-popup-close-button {
-  color: #64748b !important;
-  font-size: 18px !important;
-  top: 8px !important;
-  right: 8px !important;
+  color: rgba(255, 255, 255, 0.45) !important;
+  font-size: 15px !important;
+  top: 7px !important;
+  right: 9px !important;
   z-index: 10;
+  width: 22px !important;
+  height: 22px !important;
+  line-height: 22px !important;
+  text-align: center !important;
+  border-radius: 50% !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  transition: background 0.15s, color 0.15s !important;
 }
 
 .leaflet-popup-close-button:hover {
-  color: #e2e8f0 !important;
+  color: #fff !important;
+  background: rgba(239, 68, 68, 0.30) !important;
+  border-color: rgba(239, 68, 68, 0.40) !important;
+}
+
+/* Prevent Leaflet's wrapper from overriding our glass body colour */
+.leaflet-popup-content-wrapper .leaflet-popup-content > * {
   background: transparent !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   USER LOCATION PULSING DOT ANIMATION
+   ═══════════════════════════════════════════════════════════ */
+
+@keyframes ping {
+  0%   { transform: scale(1);   opacity: 0.8; }
+  75%  { transform: scale(2.4); opacity: 0;   }
+  100% { transform: scale(2.4); opacity: 0;   }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SMOOTH SCROLLBARS (drawers / modals)
+   ═══════════════════════════════════════════════════════════ */
+
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.10);
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.20);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SELECT OPTION DARK STYLE (trip switcher dropdown)
+   ═══════════════════════════════════════════════════════════ */
+
+option {
+  background: #0f172a;
+  color: #f1f5f9;
 }

@@ -357,3 +357,33 @@ export async function getChatHistory(req, res) {
     return res.status(500).json({ success: false, error: "Failed to fetch chat history" });
   }
 }
+
+// ── DELETE /api/ai/chat/:tripId ───────────────────────────────────────────
+/**
+ * Clear AI chat history for a trip.
+ * Only the trip owner may clear.
+ */
+export async function clearChatHistory(req, res) {
+  try {
+    await connectDB();
+    const { tripId } = req.params;
+    const userId     = req.user.uid;
+
+    const trip = await Trip.findById(tripId).lean();
+    if (!trip) return res.status(404).json({ success: false, error: "Trip not found" });
+
+    const isOwner  = trip.userId === userId;
+    const isMember = trip.participants?.some(
+      (p) => p.userId === userId && p.status === "accepted"
+    );
+    if (!isOwner && !isMember) {
+      return res.status(403).json({ success: false, error: "Forbidden: Access denied" });
+    }
+
+    await ChatMessage.deleteMany({ tripId });
+    return res.status(200).json({ success: true, message: "Chat history cleared" });
+  } catch (err) {
+    console.error("clearChatHistory Error:", err);
+    return res.status(500).json({ success: false, error: "Failed to clear chat history" });
+  }
+}

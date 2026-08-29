@@ -39,3 +39,17 @@ export async function getChatHistory(tripId) {
     return []; // non-fatal — widget will just start fresh
   }
 }
+
+/** Clear AI chat history for a trip */
+export async function clearChatHistory(tripId) {
+  try {
+    const headers = await getAuthHeaders();
+    const res = await fetch(`${BASE_URL}/api/ai/chat/${tripId}`, { method: "DELETE", headers });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to clear chat");
+    return data;
+  } catch (err) {
+    console.error("clearChatHistory error:", err);
+    throw err;
+  }
+}

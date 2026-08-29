@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { sendMessage, getChatHistory } from "../api/aiApi";
+import { sendMessage, getChatHistory, clearChatHistory } from "../api/aiApi";
 
 const WELCOME = "✨ I'm VoyageAI. Ask me to tweak your itinerary, find places, or answer travel questions!";
 
@@ -8,6 +8,7 @@ export default function AIChatModal({ trip, setActiveTrip, isOpen, onClose }) {
   const [input,          setInput]          = useState("");
   const [thinking,       setThinking]       = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [clearing,       setClearing]       = useState(false);
   const bottomRef  = useRef(null);
   const inputRef   = useRef(null);
 
@@ -54,6 +55,21 @@ export default function AIChatModal({ trip, setActiveTrip, isOpen, onClose }) {
     }
   };
 
+  const handleClear = async () => {
+    if (!trip?._id) { setMessages([{ role: "ai", text: WELCOME }]); return; }
+    if (!confirm("Clear all AI chat history for this trip?")) return;
+    setClearing(true);
+    try {
+      await clearChatHistory(trip._id);
+      setMessages([{ role: "ai", text: WELCOME }]);
+    } catch {
+      // non-fatal – just clear UI
+      setMessages([{ role: "ai", text: WELCOME }]);
+    } finally {
+      setClearing(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -79,10 +95,21 @@ export default function AIChatModal({ trip, setActiveTrip, isOpen, onClose }) {
               {trip && <p className="text-[10px] text-sky-400/80">{trip.city} · {trip.days}d trip</p>}
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/15 text-gray-400 hover:text-white flex items-center justify-center text-sm transition"
-          >✕</button>
+          <div className="flex items-center gap-2">
+            {/* Clear history */}
+            <button
+              onClick={handleClear}
+              disabled={clearing || messages.length <= 1}
+              title="Clear chat history"
+              className="w-8 h-8 rounded-full bg-white/5 hover:bg-red-500/20 text-gray-500 hover:text-red-400 flex items-center justify-center text-sm transition disabled:opacity-30"
+            >
+              🗑
+            </button>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/15 text-gray-400 hover:text-white flex items-center justify-center text-sm transition"
+            >✕</button>
+          </div>
         </div>
 
         {/* Messages */}

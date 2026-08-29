@@ -1,18 +1,6 @@
 import { useState } from "react";
 import { generateTrip } from "../api/tripsService";
-import { inviteMember } from "../api/memberService";
 import { useAuth } from "../context/AuthContext";
-
-function MemberAvatar({ name, email }) {
-  const initials = (name || email || "?").charAt(0).toUpperCase();
-  const colors = ["bg-sky-500", "bg-indigo-500", "bg-violet-500", "bg-emerald-500", "bg-rose-500", "bg-amber-500"];
-  const colorIdx = (initials.charCodeAt(0) || 0) % colors.length;
-  return (
-    <div className={`w-7 h-7 rounded-full ${colors[colorIdx]} flex items-center justify-center text-xs font-black text-white flex-shrink-0`}>
-      {initials}
-    </div>
-  );
-}
 
 export default function NewTripModal({ isOpen, onClose, onTripCreated }) {
   const { user } = useAuth();
@@ -20,70 +8,39 @@ export default function NewTripModal({ isOpen, onClose, onTripCreated }) {
   const [error, setError]     = useState("");
 
   const [formData, setFormData] = useState({
-    city:        "",
-    budget:      "",
-    startDate:   "",
-    endDate:     "",
-    interests:   "",
-    preferences: "Balanced",
+    city:          "",
+    budget:        "",
+    startDate:     "",
+    endDate:       "",
+    interests:     "",
+    preferences:   "Balanced",
+    travelerCount: 1,
   });
-
-  // ── Member invite state ──────────────────────────────
-  const [memberEmail,    setMemberEmail]    = useState("");
-  const [memberError,    setMemberError]    = useState("");
-  const [pendingMembers, setPendingMembers] = useState([]);
 
   if (!isOpen) return null;
 
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  // ── Add member to local pending list ────────────────
-  const handleAddMember = () => {
-    setMemberError("");
-    const email = memberEmail.trim().toLowerCase();
+  const adjustCount = (delta) =>
+    setFormData(prev => ({
+      ...prev,
+      travelerCount: Math.max(1, Math.min(20, prev.travelerCount + delta)),
+    }));
 
-    if (!email) return;
-
-    // Basic email validation
-    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRe.test(email)) {
-      setMemberError("Please enter a valid email address.");
-      return;
-    }
-
-    // Prevent adding yourself
-    if (user?.email && email === user.email.toLowerCase()) {
-      setMemberError("You are already the trip owner.");
-      return;
-    }
-
-    // Prevent duplicates
-    if (pendingMembers.some(m => m.email === email)) {
-      setMemberError("This email is already in the list.");
-      return;
-    }
-
-    setPendingMembers(prev => [...prev, { email }]);
-    setMemberEmail("");
-  };
-
-  const handleRemoveMember = (email) =>
-    setPendingMembers(prev => prev.filter(m => m.email !== email));
-
-  // ── Submit ───────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
       const payload = {
-        city:        formData.city,
-        budget:      Number(formData.budget),
-        startDate:   formData.startDate,
-        endDate:     formData.endDate,
-        interests:   formData.interests,
-        preferences: formData.preferences,
+        city:          formData.city,
+        budget:        Number(formData.budget),
+        startDate:     formData.startDate,
+        endDate:       formData.endDate,
+        interests:     formData.interests,
+        preferences:   formData.preferences,
+        travelerCount: Number(formData.travelerCount),
       };
 
       const response = await generateTrip(payload);
@@ -93,26 +50,9 @@ export default function NewTripModal({ isOpen, onClose, onTripCreated }) {
         return;
       }
 
-      // Invite pending members after trip creation
-      const tripId = response.savedTripId;
-      if (tripId && pendingMembers.length > 0) {
-        const results = await Promise.allSettled(
-          pendingMembers.map(m => inviteMember(tripId, m.email))
-        );
-        const failed = results
-          .map((r, i) => r.status === "rejected" ? pendingMembers[i].email : null)
-          .filter(Boolean);
-        if (failed.length > 0) {
-          // Non-blocking — trip was created, just show a warning
-          console.warn("Some invitations could not be sent:", failed);
-        }
-      }
-
       onTripCreated();
       onClose();
-      setFormData({ city: "", budget: "", startDate: "", endDate: "", interests: "", preferences: "Balanced" });
-      setPendingMembers([]);
-      setMemberEmail("");
+      setFormData({ city: "", budget: "", startDate: "", endDate: "", interests: "", preferences: "Balanced", travelerCount: 1 });
     } catch (err) {
       console.error(err);
       setError("Server error. Please try again.");
@@ -210,69 +150,32 @@ export default function NewTripModal({ isOpen, onClose, onTripCreated }) {
             </select>
           </div>
 
-          {/* ── Travel Members ───────────────────────────── */}
-          <div className="bg-slate-800/60 border border-white/8 rounded-2xl p-4 space-y-3">
+          {/* ── Traveler Count ───────────────────────────── */}
+          <div className="bg-slate-800/60 border border-white/8 rounded-2xl p-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-black text-gray-300 uppercase tracking-widest">👥 Travel Members</h3>
-              <span className="text-[10px] text-gray-500">Optional — invite after too</span>
-            </div>
-
-            {/* Owner (always shown) */}
-            <div className="flex items-center gap-2.5 bg-indigo-500/10 border border-indigo-500/20 rounded-xl px-3 py-2">
-              {user?.photoURL
-                ? <img src={user.photoURL} alt="" className="w-7 h-7 rounded-full border border-white/10" />
-                : <MemberAvatar name={user?.displayName} email={user?.email} />
-              }
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold text-gray-200 truncate">{user?.displayName || "You"}</p>
-                <p className="text-[10px] text-gray-500 truncate">{user?.email}</p>
+              <div>
+                <h3 className="text-xs font-black text-gray-300 uppercase tracking-widest">👥 Travelers</h3>
+                <p className="text-[10px] text-gray-500 mt-0.5">Budget &amp; activities scale with count</p>
               </div>
-              <span className="text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">Owner</span>
-            </div>
-
-            {/* Pending members */}
-            {pendingMembers.map(m => (
-              <div key={m.email} className="flex items-center gap-2.5 bg-slate-900/60 border border-white/5 rounded-xl px-3 py-2">
-                <MemberAvatar email={m.email} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-bold text-gray-300 truncate">{m.email}</p>
-                  <p className="text-[10px] text-amber-400">Pending invitation</p>
-                </div>
+              <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  onClick={() => handleRemoveMember(m.email)}
-                  className="text-gray-500 hover:text-red-400 transition text-sm leading-none ml-1 flex-shrink-0"
-                  title="Remove"
-                >✕</button>
-              </div>
-            ))}
-
-            {/* Add email input */}
-            <div className="space-y-2">
-              {memberError && (
-                <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-2 py-1">{memberError}</p>
-              )}
-              <div className="flex gap-2">
-                <input
-                  type="email"
-                  value={memberEmail}
-                  onChange={e => { setMemberEmail(e.target.value); setMemberError(""); }}
-                  onKeyDown={e => e.key === "Enter" && (e.preventDefault(), handleAddMember())}
-                  placeholder="friend@example.com"
-                  className="flex-1 bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500 transition"
-                />
+                  onClick={() => adjustCount(-1)}
+                  disabled={formData.travelerCount <= 1}
+                  className="w-8 h-8 rounded-xl bg-slate-700 hover:bg-slate-600 disabled:opacity-30 text-white font-black text-lg flex items-center justify-center transition"
+                >−</button>
+                <span className="text-xl font-black text-white w-8 text-center">{formData.travelerCount}</span>
                 <button
                   type="button"
-                  onClick={handleAddMember}
-                  className="bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/30 text-sky-400 text-xs font-bold px-3 py-2 rounded-xl transition whitespace-nowrap"
-                >
-                  + Add
-                </button>
+                  onClick={() => adjustCount(1)}
+                  disabled={formData.travelerCount >= 20}
+                  className="w-8 h-8 rounded-xl bg-sky-500 hover:bg-sky-600 disabled:opacity-30 text-white font-black text-lg flex items-center justify-center transition"
+                >+</button>
               </div>
-              <p className="text-[10px] text-gray-600">
-                ℹ️ Members must have a VoyageAI account. Invites sent after trip creation.
-              </p>
             </div>
+            <p className="text-[10px] text-gray-600 mt-2">
+              ℹ️ You can invite specific members via the Members panel after the trip is created.
+            </p>
           </div>
 
           {/* Actions */}
@@ -289,11 +192,7 @@ export default function NewTripModal({ isOpen, onClose, onTripCreated }) {
               disabled={loading}
               className="flex-1 bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 text-white font-bold py-2.5 rounded-xl text-sm transition disabled:opacity-50 shadow-lg shadow-sky-500/20"
             >
-              {loading
-                ? "🤖 Generating..."
-                : pendingMembers.length > 0
-                ? `✈️ Create Trip + Invite ${pendingMembers.length}`
-                : "✈️ Create Trip"}
+              {loading ? "🤖 Generating..." : `✈️ Create Trip${formData.travelerCount > 1 ? ` for ${formData.travelerCount}` : ""}`}
             </button>
           </div>
         </form>

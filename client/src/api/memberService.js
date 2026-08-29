@@ -74,3 +74,18 @@ export async function declineInvitation(tripId) {
   }
   return res.json();
 }
+
+/** Join a trip via a shareable invite link */
+export async function joinTrip(tripId) {
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${BASE}/api/trips/${tripId}/join`, {
+    method: "POST",
+    headers,
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || "Failed to join trip");
+  }
+  return res.json();
+}
+

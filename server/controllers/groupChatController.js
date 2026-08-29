@@ -71,3 +71,28 @@ export const sendMessage = async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 };
+
+/* ─── DELETE /api/group-chat/:tripId ──────────────────────── */
+export const clearMessages = async (req, res) => {
+  try {
+    await connectDB();
+    const { tripId } = req.params;
+    const userId = req.user.uid;
+
+    try { await checkMembership(tripId, userId); }
+    catch (err) { return res.status(err.message.includes("Forbidden") ? 403 : 404).json({ success: false, error: err.message }); }
+
+    await GroupMessage.deleteMany({ tripId });
+
+    // Notify all connected members so their UI clears too
+    const io = getIO();
+    if (io) {
+      io.to(`trip:${tripId}`).emit("clear_chat");
+    }
+
+    res.json({ success: true, message: "Group chat cleared" });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+

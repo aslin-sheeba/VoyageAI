@@ -18,3 +18,11 @@ export async function sendMessage(tripId, message) {
   if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || "Failed to send message"); }
   return res.json();
 }
+
+export async function clearMessages(tripId) {
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${BASE}/api/group-chat/${tripId}`, { method: "DELETE", headers });
+  if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || "Failed to clear chat"); }
+  return res.json();
+}
+

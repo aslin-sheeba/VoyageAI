@@ -11,6 +11,7 @@ export default function TripMembersPanel({ trip, onTripUpdate }) {
   const [showForm, setShowForm]   = useState(false);
   const [error, setError]         = useState("");
   const [success, setSuccess]     = useState("");
+  const [linkCopied, setLinkCopied] = useState(false);
 
   const isOwner = trip?.userId === user?.uid;
 
@@ -66,6 +67,24 @@ export default function TripMembersPanel({ trip, onTripUpdate }) {
     }
   };
 
+  const handleCopyLink = () => {
+    const url = `${window.location.origin}/?invite=${trip._id}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 3000);
+    }).catch(() => {
+      // Fallback for older browsers
+      const ta = document.createElement("textarea");
+      ta.value = url;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 3000);
+    });
+  };
+
   const statusBadge = (status) => {
     const map = {
       accepted: { label: "Accepted",  cls: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20" },
@@ -81,6 +100,8 @@ export default function TripMembersPanel({ trip, onTripUpdate }) {
   };
 
   if (!trip) return null;
+
+  const inviteLink = `${window.location.origin}/?invite=${trip._id}`;
 
   return (
     <div className="bg-slate-800/40 border border-white/5 rounded-2xl p-4 mt-4">
@@ -188,6 +209,33 @@ export default function TripMembersPanel({ trip, onTripUpdate }) {
           )}
         </div>
       )}
+
+      {/* ── Invite via Link ────────────────────────────────── */}
+      <div className="mt-4 pt-3 border-t border-white/5">
+        <p className="text-[11px] font-bold text-gray-400 mb-2 uppercase tracking-widest">🔗 Invite via Link</p>
+        <div
+          className="flex items-center gap-2 bg-slate-900/60 border border-white/10 rounded-xl px-3 py-2"
+          style={{
+            background: "rgba(15, 23, 42, 0.55)",
+            backdropFilter: "blur(12px) saturate(160%)",
+          }}
+        >
+          <p className="flex-1 text-[10px] text-sky-300/70 font-mono truncate">{inviteLink}</p>
+          <button
+            onClick={handleCopyLink}
+            className={`flex-shrink-0 text-[10px] font-bold px-3 py-1.5 rounded-lg transition ${
+              linkCopied
+                ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                : "bg-sky-500/15 hover:bg-sky-500/25 text-sky-400 border border-sky-500/20"
+            }`}
+          >
+            {linkCopied ? "✓ Copied!" : "Copy"}
+          </button>
+        </div>
+        <p className="text-[10px] text-gray-600 mt-1.5">
+          Anyone who opens this link will be added to the trip instantly after they sign in.
+        </p>
+      </div>
     </div>
   );
 }

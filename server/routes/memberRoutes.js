@@ -7,6 +7,7 @@ import {
   listInvitations,
   acceptInvitation,
   declineInvitation,
+  joinTrip,
 } from "../controllers/memberController.js";
 
 const router = express.Router();
@@ -16,9 +17,13 @@ router.post(  "/trips/:tripId/members",              verifyToken, inviteMember);
 router.get(   "/trips/:tripId/members",              verifyToken, listMembers);
 router.delete("/trips/:tripId/members/:targetUserId", verifyToken, removeMember);
 
+// Join a trip via invite link (self-accept)
+router.post("/trips/:tripId/join", verifyToken, joinTrip);
+
 // Invitation center (global, for the authenticated user)
 router.get( "/invitations",               verifyToken, listInvitations);
 router.post("/invitations/:tripId/accept",  verifyToken, acceptInvitation);
 router.post("/invitations/:tripId/decline", verifyToken, declineInvitation);
 
 export default router;
+

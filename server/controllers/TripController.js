@@ -75,7 +75,7 @@ export const generateTrip = async (req, res) => {
     const userName  = req.user.name || req.user.displayName || "Traveler";
     const userPhoto = req.user.picture || "";
 
-    const { city, budget, startDate, endDate, interests, preferences } = req.body;
+    const { city, budget, startDate, endDate, interests, preferences, travelerCount } = req.body;
     const apiKey = process.env.GEOAPIFY_KEY;
 
     // --- Input validation ---
@@ -129,8 +129,8 @@ export const generateTrip = async (req, res) => {
     const sightsForAI      = sightsList.slice(0, 10).map(s => ({ name: s.name, lat: s.lat, lng: s.lng, address: s.address }));
     const restaurantsForAI = restaurantsList.slice(0, 10).map(r => ({ name: r.name, lat: r.lat, lng: r.lng, address: r.address }));
 
-    // Creator is participant #1
-    const initialParticipants = 1; // only the owner at creation
+    // Creator is participant #1, additional traveler count from form
+    const initialParticipants = Math.max(1, Number(travelerCount) || 1); // min 1
 
     // 3. Gemini itinerary
     const SYSTEM_PROMPT = `

@@ -229,3 +229,58 @@ export const declineInvitation = async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 };
+
+// ─────────────────────────────────────────
+// POST /api/trips/:tripId/join
+// Join a trip via an invite link (self-accept)
+// ─────────────────────────────────────────
+export const joinTrip = async (req, res) => {
+  try {
+    await connectDB();
+    const uid        = req.user.uid;
+    const email      = req.user.email || "";
+    const name       = req.user.name || req.user.displayName || email.split("@")[0] || "Traveler";
+    const photoURL   = req.user.picture || "";
+    const { tripId } = req.params;
+
+    const trip = await Trip.findById(tripId);
+    if (!trip) return res.status(404).json({ success: false, error: "Trip not found" });
+
+    // Already the owner?
+    if (trip.userId === uid) {
+      return res.status(400).json({ success: false, error: "You are already the trip owner" });
+    }
+
+    // Already an accepted member?
+    const existing = trip.participants.find(p => p.userId === uid || (email && p.email === email));
+    if (existing) {
+      if (existing.status === "accepted") {
+        return res.status(409).json({ success: false, error: "You are already a member of this trip" });
+      }
+      // If previously declined/invited, mark accepted
+      existing.status   = "accepted";
+      existing.userId   = uid;
+      existing.joinedAt = new Date();
+      await trip.save();
+      return res.json({ success: true, message: `You have joined ${trip.tripName}`, trip });
+    }
+
+    // Add as accepted participant
+    trip.participants.push({
+      userId:  uid,
+      name,
+      email,
+      photoURL,
+      role:     "member",
+      status:   "accepted",
+      joinedAt: new Date(),
+    });
+    await trip.save();
+
+    res.json({ success: true, message: `You have joined ${trip.tripName}`, trip });
+  } catch (err) {
+    console.error("joinTrip error:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+

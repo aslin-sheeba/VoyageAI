@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { io } from "socket.io-client";
 import { useAuth } from "../context/AuthContext";
-import { getMessages } from "../api/groupChatService";
+import { getMessages, clearMessages } from "../api/groupChatService";
 import { auth } from "../firebase";
 
 const BASE = import.meta.env.VITE_API_BASE_URL || (typeof window !== "undefined" ? window.location.origin : "");
@@ -34,6 +34,7 @@ function GroupChatModal({ trip, isOpen, onClose, onAskAI }) {
   const [loading,   setLoading]   = useState(false);
   const [connected, setConnected] = useState(false);
   const [sending,   setSending]   = useState(false);
+  const [clearing,  setClearing]  = useState(false);
   const bottomRef = useRef(null);
   const inputRef  = useRef(null);
 
@@ -68,7 +69,7 @@ function GroupChatModal({ trip, isOpen, onClose, onAskAI }) {
           socketInstance = io(WS_URL, {
             auth: { token },
             transports: ["websocket", "polling"],
-            reconnectionAttempts: 3, // Stop spamming console if serverless
+            reconnectionAttempts: 3,
             timeout: 5000,
           });
         }
@@ -87,6 +88,11 @@ function GroupChatModal({ trip, isOpen, onClose, onAskAI }) {
             return [...filtered, msg];
           });
         });
+
+        // ── Handle remote clear ──────────────────────
+        socketInstance.on("clear_chat", () => {
+          setMessages([]);
+        });
       } catch (e) { console.error("Socket connect error:", e); }
     };
 
@@ -99,6 +105,7 @@ function GroupChatModal({ trip, isOpen, onClose, onAskAI }) {
         socketInstance.off("connect");
         socketInstance.off("disconnect");
         socketInstance.off("connect_error");
+        socketInstance.off("clear_chat");
         socketInstance.emit("leave_trip", trip._id);
       }
     };
@@ -159,6 +166,20 @@ function GroupChatModal({ trip, isOpen, onClose, onAskAI }) {
     }
   };
 
+  const handleClear = async () => {
+    if (!trip?._id) { setMessages([]); return; }
+    if (!confirm("Clear all group chat history for this trip?")) return;
+    setClearing(true);
+    try {
+      await clearMessages(trip._id);
+      setMessages([]);
+    } catch {
+      setMessages([]);
+    } finally {
+      setClearing(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -185,7 +206,18 @@ function GroupChatModal({ trip, isOpen, onClose, onAskAI }) {
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/15 text-gray-400 hover:text-white flex items-center justify-center text-sm transition">✕</button>
+          <div className="flex items-center gap-2">
+            {/* Clear chat */}
+            <button
+              onClick={handleClear}
+              disabled={clearing || messages.length === 0}
+              title="Clear chat history"
+              className="w-8 h-8 rounded-full bg-white/5 hover:bg-red-500/20 text-gray-500 hover:text-red-400 flex items-center justify-center text-sm transition disabled:opacity-30"
+            >
+              🗑
+            </button>
+            <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/15 text-gray-400 hover:text-white flex items-center justify-center text-sm transition">✕</button>
+          </div>
         </div>
 
         {/* Messages */}
