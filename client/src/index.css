@@ -4,12 +4,15 @@
    MAP CANVAS PERF
    ═══════════════════════════════════════════════════════════ */
 
-/* Tell GPU to rasterize the map layer independently */
+/* GPU-rasterize the map layer independently */
 .leaflet-container {
   z-index: 0;
   background: #0f172a;
   will-change: transform;
   contain: layout style;
+  /* Force GPU compositing layer */
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 /* Dark (inverted) OSM tiles */
@@ -41,7 +44,7 @@
    ═══════════════════════════════════════════════════════════ */
 
 .leaflet-popup-content-wrapper {
-  background: rgba(2, 6, 23, 0.55) !important;
+  background: rgba(2, 6, 23, 0.60) !important;
   backdrop-filter: blur(20px) saturate(180%) !important;
   -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
   border: 1px solid rgba(255, 255, 255, 0.10) !important;
@@ -104,6 +107,46 @@
 }
 
 /* ═══════════════════════════════════════════════════════════
+   MODAL ANIMATIONS
+   ═══════════════════════════════════════════════════════════ */
+
+@keyframes modal-in {
+  from { opacity: 0; transform: scale(0.95) translateY(8px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);   }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+/* Scrim backdrop */
+.modal-scrim {
+  animation: fade-in 0.18s ease both;
+}
+
+/* Modal card */
+.modal-card {
+  animation: modal-in 0.22s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+  will-change: transform, opacity;
+}
+
+/* Drawer slide-in */
+.drawer-slide-in {
+  animation: slide-right 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+@keyframes slide-right {
+  from { opacity: 0; transform: translateX(12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ═══════════════════════════════════════════════════════════
    SMOOTH SCROLLBARS (drawers / modals)
    ═══════════════════════════════════════════════════════════ */
 
@@ -129,4 +172,33 @@
 option {
   background: #0f172a;
   color: #f1f5f9;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   FOCUS RING — accessible, consistent
+   ═══════════════════════════════════════════════════════════ */
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+button:focus-visible {
+  outline: none;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DATE INPUT CALENDAR ICON — keep it white
+   ═══════════════════════════════════════════════════════════ */
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) opacity(0.45);
+  cursor: pointer;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MISC PERFORMANCE HELPERS
+   ═══════════════════════════════════════════════════════════ */
+
+/* Promote heavy glass panels to GPU layer */
+[style*="backdrop-filter"] {
+  backface-visibility: hidden;
 }

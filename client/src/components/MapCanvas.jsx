@@ -1,7 +1,7 @@
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, Circle } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, memo } from "react";
 
 // ── Default Leaflet marker fix ──────────────────────────────────────────────
 import icon       from "leaflet/dist/images/marker-icon.png";
@@ -21,9 +21,13 @@ const ICON_CONFIG = {
   other:      { emoji: "📍", bg: "#64748b", glow: "rgba(100,116,139,0.5)" },
 };
 
+// ── Icon instance cache ── one divIcon per type, never recreated ──────────
+const ICON_CACHE = {};
+
 function makeIcon(type) {
+  if (ICON_CACHE[type]) return ICON_CACHE[type];
   const cfg = ICON_CONFIG[type] || ICON_CONFIG.other;
-  return L.divIcon({
+  const icon = L.divIcon({
     className: "",
     iconAnchor: [20, 40],
     popupAnchor: [0, -42],
@@ -38,18 +42,17 @@ function makeIcon(type) {
           border-radius:50%;
           background:${cfg.glow};
           filter:blur(6px);
-          opacity:0.7;
+          opacity:0.6;
         "></div>
-        <!-- glass pin body -->
+        <!-- glass pin body (no backdrop-filter — too costly during pan/zoom) -->
         <div style="
           position:absolute;inset:0;
           border-radius:50% 50% 50% 0;
-          background:linear-gradient(135deg,${cfg.bg}CC,${cfg.bg}88);
-          border:1.5px solid rgba(255,255,255,0.3);
+          background:linear-gradient(135deg,${cfg.bg}DD,${cfg.bg}99);
+          border:1.5px solid rgba(255,255,255,0.28);
           box-shadow:
             0 4px 14px ${cfg.glow},
-            inset 0 1px 0 rgba(255,255,255,0.35);
-          backdrop-filter:blur(6px);
+            inset 0 1px 0 rgba(255,255,255,0.30);
           display:flex;align-items:center;justify-content:center;
           font-size:17px;
           transform:rotate(-45deg);
@@ -58,6 +61,8 @@ function makeIcon(type) {
         </div>
       </div>`,
   });
+  ICON_CACHE[type] = icon;
+  return icon;
 }
 
 // ── User location dot icon ──────────────────────────────────────────────────
@@ -192,7 +197,7 @@ function RouteBoundsHandler({ routeLine }) {
 }
 
 // ── MAIN MAP ────────────────────────────────────────────────────────────────
-export default function MapCanvas({ activeTripId, locations = [], zoomTo = null, selectedId = null }) {
+function MapCanvas({ activeTripId, locations = [], zoomTo = null, selectedId = null }) {
   const markerRefs    = useRef({});
   const defaultCenter = [20.5937, 78.9629];
 
@@ -383,3 +388,5 @@ export default function MapCanvas({ activeTripId, locations = [], zoomTo = null,
     </MapContainer>
   );
 }
+
+export default memo(MapCanvas);

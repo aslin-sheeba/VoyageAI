@@ -74,15 +74,15 @@ export default function AIChatModal({ trip, setActiveTrip, isOpen, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-[550] flex items-end sm:items-center justify-center sm:justify-end p-0 sm:p-6"
+      className="fixed inset-0 z-[600] flex items-end sm:items-center justify-center sm:justify-end p-0 sm:p-6"
       onClick={onClose}
     >
-      {/* Backdrop (only on mobile) */}
-      <div className="absolute inset-0 bg-black/60 sm:bg-transparent" />
+      {/* Backdrop */}
+      <div className="absolute inset-0 modal-scrim" style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }} />
 
       {/* Modal */}
       <div
-        className="relative z-10 w-full sm:w-[420px] bg-slate-900 border border-white/10 rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+        className="modal-card relative z-10 w-full sm:w-[420px] bg-slate-900 border border-white/10 rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden"
         style={{ height: "clamp(400px, 60vh, 620px)" }}
         onClick={e => e.stopPropagation()}
       >

@@ -75,10 +75,10 @@ const TYPE_EMOJI = { hotel: "🏨", restaurant: "🍴", food: "🍴", attraction
    ───────────────────────────────────────────────────────────── */
 function FloatingPanel({ title, onClose, children, wide = false }) {
   return createPortal(
-    <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 modal-scrim" style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }} onClick={onClose}>
       <div
-        className={`relative rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-white/10 ${wide ? "w-full max-w-3xl max-h-[88vh]" : "w-full max-w-lg max-h-[85vh]"}`}
-        style={{ background: "rgba(2, 6, 23, 0.65)", backdropFilter: "blur(24px) saturate(180%)", WebkitBackdropFilter: "blur(24px) saturate(180%)" }}
+        className={`modal-card relative rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-white/10 ${wide ? "w-full max-w-3xl max-h-[88vh]" : "w-full max-w-lg max-h-[85vh]"}`}
+        style={{ background: "rgba(2, 6, 23, 0.80)", backdropFilter: "blur(24px) saturate(180%)", WebkitBackdropFilter: "blur(24px) saturate(180%)" }}
         onClick={e => e.stopPropagation()}
       >
         {/* Subtle top glow line */}
@@ -100,7 +100,7 @@ function FloatingPanel({ title, onClose, children, wide = false }) {
 function LocationsDrawer({ trip, locations, onClose, onSelect, selectedId }) {
   const groups = groupByDay(locations);
   return (
-    <div className="fixed top-0 right-0 bottom-0 z-[300] w-full sm:w-64 flex flex-col shadow-2xl border-l border-white/8"
+    <div className="fixed top-0 right-0 bottom-0 z-50 w-full sm:w-64 flex flex-col shadow-2xl border-l border-white/8"
       style={{ background: "rgba(2, 6, 23, 0.75)", backdropFilter: "blur(24px) saturate(160%)", WebkitBackdropFilter: "blur(24px) saturate(160%)" }}>
       {/* Top glow */}
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-sky-500/30 to-transparent" />
@@ -144,7 +144,7 @@ function LocationsDrawer({ trip, locations, onClose, onSelect, selectedId }) {
    ───────────────────────────────────────────────────────────── */
 function TimelineDrawer({ trip, setActiveTrip, spent, total, percent, onClose }) {
   return (
-    <div className="fixed top-0 right-0 bottom-0 z-[300] w-full sm:w-[380px] flex flex-col shadow-2xl border-l border-white/8"
+    <div className="fixed top-0 right-0 bottom-0 z-50 w-full sm:w-[380px] flex flex-col shadow-2xl border-l border-white/8 drawer-slide-in"
       style={{ background: "rgba(2, 6, 23, 0.75)", backdropFilter: "blur(24px) saturate(160%)", WebkitBackdropFilter: "blur(24px) saturate(160%)" }}>
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent" />
       <div className="flex items-center justify-between px-4 py-3 border-b border-white/8 flex-shrink-0">
@@ -379,7 +379,7 @@ export default function App() {
       </div>
 
       {/* ── TOP BAR ─────────────────────────────────────────── */}
-      <header className="absolute top-0 left-0 right-0 z-[100] flex flex-col md:flex-row md:items-center justify-between gap-2 p-3 pointer-events-none">
+      <header className="absolute top-0 left-0 right-0 z-40 flex flex-col md:flex-row md:items-center justify-between gap-2 p-3 pointer-events-none">
 
         <div className="flex items-center justify-between w-full md:w-auto gap-3 pointer-events-auto">
           {/* Brand */}
@@ -460,7 +460,7 @@ export default function App() {
       </header>
 
       {/* ── LEFT NAV DOCK (Desktop) ──────────────────────── */}
-      <nav className="absolute left-4 top-1/2 -translate-y-1/2 z-[100] hidden md:flex flex-col gap-2">
+      <nav className="absolute left-4 top-1/2 -translate-y-1/2 z-40 hidden md:flex flex-col gap-2">
         {NAV.map(item => (
           <NavButton
             key={item.id}
@@ -473,7 +473,7 @@ export default function App() {
 
       {/* ── BOTTOM NAV DOCK (Mobile) ─────────────────────── */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-[100] flex md:hidden items-center justify-around px-2 py-2 rounded-t-2xl shadow-2xl pointer-events-auto overflow-x-auto gap-1 border-t border-white/8"
+        className="fixed bottom-0 left-0 right-0 z-40 flex md:hidden items-center justify-around px-2 py-2 rounded-t-2xl shadow-2xl pointer-events-auto overflow-x-auto gap-1 border-t border-white/8"
         style={{ background: "rgba(2,6,23,0.80)", backdropFilter: "blur(20px) saturate(160%)", WebkitBackdropFilter: "blur(20px) saturate(160%)" }}
       >
         {NAV.map(item => {
@@ -501,13 +501,14 @@ export default function App() {
       </nav>
 
       {/* ── FLOATING AI + CHAT BUTTONS ─────────────────── */}
-      {activeTrip && !activePanel && (
-        <div className="fixed bottom-[76px] md:bottom-6 right-4 z-[200] flex flex-col gap-2 items-end">
+      {/* Hidden when any modal is open to prevent z-index collision */}
+      {activeTrip && !activePanel && !modalOpen && !aiOpen && !chatOpen && (
+        <div className="fixed bottom-[76px] md:bottom-6 right-4 z-40 flex flex-col gap-2 items-end">
           <FloatingActionButton
             onClick={() => { setAiOpen(true); setChatOpen(false); }}
             label="AI Assistant"
             emoji="✨"
-            active={aiOpen}
+            active={false}
             accentFrom="#0ea5e9"
             accentTo="#6366f1"
             glowColor="#0ea5e9"
@@ -516,17 +517,44 @@ export default function App() {
             onClick={() => { setChatOpen(true); setAiOpen(false); }}
             label="Trip Chat"
             emoji="💬"
-            active={chatOpen}
+            active={false}
             accentFrom="#10b981"
             accentTo="#14b8a6"
             glowColor="#10b981"
           />
         </div>
       )}
+      {/* Show open AI/Chat FABs separately so they stay visible and close-able */}
+      {activeTrip && !activePanel && (aiOpen || chatOpen) && (
+        <div className="fixed bottom-[76px] md:bottom-6 right-4 z-40 flex flex-col gap-2 items-end">
+          {aiOpen && (
+            <FloatingActionButton
+              onClick={() => setAiOpen(false)}
+              label="AI Assistant"
+              emoji="✨"
+              active={true}
+              accentFrom="#0ea5e9"
+              accentTo="#6366f1"
+              glowColor="#0ea5e9"
+            />
+          )}
+          {chatOpen && (
+            <FloatingActionButton
+              onClick={() => setChatOpen(false)}
+              label="Trip Chat"
+              emoji="💬"
+              active={true}
+              accentFrom="#10b981"
+              accentTo="#14b8a6"
+              glowColor="#10b981"
+            />
+          )}
+        </div>
+      )}
 
       {/* ── DRAWER BACKDROP ──────────────────────────────── */}
       {(activePanel === "itinerary" || activePanel === "locations") && (
-        <div className="fixed inset-0 z-[290] bg-black/30 backdrop-blur-[2px]" onClick={closePanel} />
+        <div className="fixed inset-0 z-[45] bg-black/30 backdrop-blur-[2px]" onClick={closePanel} />
       )}
 
       {/* ── PANELS ───────────────────────────────────────── */}
@@ -590,8 +618,9 @@ export default function App() {
       )}
 
       {/* ── BOTTOM STATUS BAR ────────────────────────────── */}
-      {!activePanel && normalizedLocations.length > 0 && (
-        <div className="absolute bottom-[80px] md:bottom-6 left-1/2 -translate-x-1/2 z-[90] pointer-events-none w-[90%] max-w-md md:w-auto">
+      {/* Hidden during any modal or active panel to prevent overlap */}
+      {!activePanel && !modalOpen && !aiOpen && !chatOpen && normalizedLocations.length > 0 && (
+        <div className="absolute bottom-[80px] md:bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-none w-[90%] max-w-md md:w-auto">
           <div className="rounded-2xl px-4 py-2 md:px-5 md:py-2.5 flex items-center justify-between md:justify-start gap-2 md:gap-4 text-[10px] sm:text-xs text-gray-400" style={glassCard}>
             <span>📍 <span className="text-white font-bold">{normalizedLocations.length}</span> mapped</span>
             <span className="w-px h-3 bg-white/15" />
